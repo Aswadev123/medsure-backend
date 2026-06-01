@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free OCR API - Test Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e40af'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Free OCR API</h1>
+            <p class="text-gray-600 text-lg">Extract text from images and PDFs instantly</p>
+        </div>
+
+        <!-- API Info -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">API Information</h2>
+            <div id="apiInfo" class="text-sm text-gray-600">
+                Loading API information...
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload File for OCR</h2>
+            
+            <!-- Language Selection -->
+            <div class="mb-4">
+                <label for="language" class="block text-sm font-medium text-gray-700 mb-2">Language (for images)</label>
+                <select id="language" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="eng">English</option>
+                    <option value="spa">Spanish</option>
+                    <option value="fra">French</option>
+                    <option value="deu">German</option>
+                    <option value="ita">Italian</option>
+                    <option value="por">Portuguese</option>
+                    <option value="rus">Russian</option>
+                    <option value="chi_sim">Chinese Simplified</option>
+                    <option value="chi_tra">Chinese Traditional</option>
+                    <option value="jpn">Japanese</option>
+                    <option value="kor">Korean</option>
+                    <option value="ara">Arabic</option>
+                    <option value="hin">Hindi</option>
+                </select>
+            </div>
+
+            <!-- File Upload Area -->
+            <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <p class="text-lg text-gray-600 mb-2">Drop your file here or click to browse</p>
+                <p class="text-sm text-gray-500">Supports images (JPG, PNG, GIF, BMP, TIFF, WebP) and PDFs</p>
+                <input type="file" id="fileInput" class="hidden" accept="image/*,.pdf">
+            </div>
+
+            <!-- Upload Button -->
+            <button id="uploadBtn" class="w-full mt-4 bg-primary text-white py-3 px-6 rounded-md hover:bg-secondary transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                <span id="uploadText">Select a file to upload</span>
+                <div id="uploadSpinner" class="hidden inline-block ml-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">OCR Results</h2>
+            
+            <!-- File Info -->
+            <div id="fileInfo" class="mb-4 p-3 bg-gray-50 rounded-md text-sm"></div>
+            
+            <!-- Extracted Text -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Extracted Text</label>
+                <textarea id="extractedText" class="w-full h-40 p-3 border border-gray-300 rounded-md resize-none" readonly></textarea>
+            </div>
+            
+            <!-- Copy Button -->
+            <button id="copyBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                Copy Text
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-gray-500 text-sm">
+            <p>Free OCR API - No limits, no registration required</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // DOM elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadText = document.getElementById('uploadText');
+        const uploadSpinner = document.getElementById('uploadSpinner');
+        const resultsSection = document.getElementById('resultsSection');
+        const extractedText = document.getElementById('extractedText');
+        const fileInfo = document.getElementById('fileInfo');
+        const copyBtn = document.getElementById('copyBtn');
+        const languageSelect = document.getElementById('language');
+        const apiInfo = document.getElementById('apiInfo');
+
+        // Load API info
+        async function loadApiInfo() {
+            try {
+                const response = await fetch('/api/info');
+                const data = await response.json();
+
+                apiInfo.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <h3 class="font-medium text-gray-800">Supported Images</h3>
+                            <p class="text-xs">${data.supportedTypes.images.join(', ')}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Supported Documents</h3>
+                            <p class="text-xs">${data.supportedTypes.documents.join(', ')}</p>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Max File Size</h3>
+                            <p class="text-xs">${data.maxFileSize}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                apiInfo.innerHTML = '<p class="text-red-600">Failed to load API information</p>';
+            }
+        }
+
+        // File handling
+        function handleFile(file) {
+            selectedFile = file;
+            uploadText.textContent = `Upload ${file.name}`;
+            uploadBtn.disabled = false;
+
+            // Update drop zone appearance
+            dropZone.innerHTML = `
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-lg text-gray-600 mb-2">File selected: ${file.name}</p>
+                <p class="text-sm text-gray-500">Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            `;
+        }
+
+        // Event listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-primary', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-primary', 'bg-blue-50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-blue-50');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Upload functionality
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Show loading state
+            uploadBtn.disabled = true;
+            uploadText.textContent = 'Processing...';
+            uploadSpinner.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('language', languageSelect.value);
+
+                const response = await fetch('/api/ocr', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Show results
+                    extractedText.value = result.data.text;
+
+                    fileInfo.innerHTML = `
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                            <div><strong>File:</strong> ${result.fileInfo.originalName}</div>
+                            <div><strong>Type:</strong> ${result.fileInfo.mimeType}</div>
+                            <div><strong>Size:</strong> ${(result.fileInfo.size / 1024).toFixed(1)} KB</div>
+                            <div><strong>Time:</strong> ${result.data.processingTime}ms</div>
+                        </div>
+                    `;
+
+                    resultsSection.classList.remove('hidden');
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                alert(`Upload failed: ${error.message}`);
+            } finally {
+                // Reset button state
+                uploadBtn.disabled = false;
+                uploadText.textContent = `Upload ${selectedFile.name}`;
+                uploadSpinner.classList.add('hidden');
+            }
+        });
+
+        // Copy functionality
+        copyBtn.addEventListener('click', () => {
+            extractedText.select();
+            document.execCommand('copy');
+
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('bg-green-700');
+
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.classList.remove('bg-green-700');
+            }, 2000);
+        });
+
+        // Initialize
+        loadApiInfo();
+    </script>
+</body>
+</html>
