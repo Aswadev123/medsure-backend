@@ -13,6 +13,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
+          'https://medsure-ui.vercel.app'
+
       // add your production frontend later here
       // 'https://your-frontend-domain.com'
     ],
@@ -31,6 +33,12 @@ async function bootstrap() {
     }),
   );
 
+
+  
+app.enableCors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+});
   // -----------------------------
   // Upload folders setup
   // -----------------------------
